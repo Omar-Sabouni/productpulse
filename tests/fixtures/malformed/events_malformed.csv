@@ -1,0 +1,4 @@
+event_id,user_id,session_id,event_name,event_timestamp
+demo_valid,u5,s_u5_0,page_view,2026-01-12T08:10:00Z
+recoverable_1,u5,s_u5_0,page_view,not-a-timestamp
+,u5,s_u5_0,page_view,2026-01-12T08:20:00Z

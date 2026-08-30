@@ -1,0 +1,2 @@
+event_id,user_id,session_id,event_name,event_timestamp
+e01,u1,s_u1_0,page_view,2026-01-05T09:06:00Z

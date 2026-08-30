@@ -1,0 +1,2 @@
+event_id,user_id,session_id,event_name,event_timestamp,event_name
+header_conflict,u1,s_u1_0,activation,2026-01-05T09:07:00Z,page_view

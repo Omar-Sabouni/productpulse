@@ -1,0 +1,84 @@
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+showSidebarNavigation = false
+
+[server]
+address = "127.0.0.1"
+headless = true
+enableStaticServing = true
+
+[theme]
+base = "light"
+primaryColor = "#1F4E8C"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#EEF3FA"
+textColor = "#1A1F24"
+linkColor = "#1F4E8C"
+codeTextColor = "#1A1F24"
+codeBackgroundColor = "#EEF3FA"
+font = "IBM Plex Sans"
+headingFont = "IBM Plex Sans"
+codeFont = "IBM Plex Mono"
+baseFontSize = 15
+baseFontWeight = 400
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+codeFontSize = "0.85rem"
+baseRadius = "none"
+buttonRadius = "none"
+borderColor = "#B9C6D6"
+dataframeBorderColor = "#B9C6D6"
+dataframeHeaderBackgroundColor = "#E3ECF8"
+showWidgetBorder = true
+showSidebarBorder = true
+chartCategoricalColors = [
+    "#1F4E8C",
+    "#7AA6D6",
+    "#5A6B7B",
+    "#A9B6C3",
+    "#2F6E5B",
+]
+chartSequentialColors = [
+    "#F3F7FC",
+    "#E3ECF8",
+    "#C9DAF0",
+    "#A9C3E5",
+    "#86A9D7",
+    "#628DC6",
+    "#4373B2",
+    "#2F5E9E",
+    "#1F4E8C",
+    "#163866",
+]
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/ibm-plex-sans-latin-400-normal.woff2"
+weight = 400
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/ibm-plex-sans-latin-600-normal.woff2"
+weight = 600
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/ibm-plex-mono-latin-400-normal.woff2"
+weight = 400
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/ibm-plex-mono-latin-600-normal.woff2"
+weight = 600
+
+[theme.sidebar]
+primaryColor = "#1F4E8C"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#EEF3FA"
+textColor = "#1A1F24"
+borderColor = "#B9C6D6"
+baseRadius = "none"
+buttonRadius = "none"
+showWidgetBorder = true

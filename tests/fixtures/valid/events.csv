@@ -1,0 +1,15 @@
+event_id,user_id,session_id,event_name,event_timestamp
+e01,u1,s_u1_0,activation,2026-01-05T09:05:00Z
+e13,u1,s_u1_0,page_view,2026-01-05T09:10:00Z
+e02,u1,s_u1_1,page_view,2026-01-06T09:05:00Z
+e03,u1,s_u1_7,page_view,2026-01-12T09:05:00Z
+e14,u1,s_u1_14,page_view,2026-01-19T09:05:00Z
+e04,u2,s_u2_0,page_view,2026-01-05T10:05:00Z
+e05,u2,s_u2_1,page_view,2026-01-06T10:05:00Z
+e06,u3,s_u3_0,page_view,2026-01-05T11:05:00Z
+e07,u3,s_u3_1,page_view,2026-01-06T11:05:00Z
+e08,u3,s_u3_7,activation,2026-01-12T11:00:00Z
+e09,u4,s_u4_0,activation,2026-01-06T08:05:00Z
+e10,u4,s_u4_7,page_view,2026-01-13T08:05:00Z
+e11,u5,s_u5_0,activation,2026-01-12T08:05:00Z
+e12,u5,s_u5_1,page_view,2026-01-13T08:05:00Z

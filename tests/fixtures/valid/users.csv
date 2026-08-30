@@ -1,0 +1,6 @@
+user_id,signup_timestamp,acquisition_channel
+u1,2026-01-05T09:00:00Z,organic
+u2,2026-01-05T10:00:00Z,organic
+u3,2026-01-05T11:00:00Z,paid_search
+u4,2026-01-06T08:00:00Z,organic
+u5,2026-01-12T08:00:00Z,referral
