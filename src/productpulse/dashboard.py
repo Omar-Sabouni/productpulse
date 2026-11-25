@@ -512,7 +512,7 @@ def main() -> None:
     with activity_tab:
         st.header("Daily active users")
         st.caption(
-            "DAU = distinct users with at least one event on a UTC calendar date."
+            "A user counts as active on a day (UTC) if they had at least one event."
         )
         if population_count == 0:
             st.info("No users match these filters.")
@@ -545,8 +545,8 @@ def main() -> None:
     with funnel_tab:
         st.header("Activation within 7 days")
         st.caption(
-            "Activation rate = eligible signups with a qualifying activation event "
-            "from signup through day 7, inclusive."
+            "The activation rate is the share of signups who activated within 7 days "
+            "of signing up."
         )
         if population_count == 0:
             st.info("No users match these filters.")
@@ -608,34 +608,30 @@ def main() -> None:
             with st.expander("Activation by cohort", expanded=False):
                 st.dataframe(display_funnel, hide_index=True, width="stretch")
                 st.write(
-                    "A signup enters the denominator seven elapsed days after its "
-                    "signup timestamp. The first "
-                    "`activation` event through that boundary counts. Pending signups "
-                    "remain in the table but do not depress the rate."
+                    "A signup counts toward the rate once 7 full days have passed "
+                    "since it signed up."
                 )
 
     with retention_tab:
         st.header("Day-1 and day-7 retention")
         st.caption(
-            "Retention = eligible cohort users with an event on the exact "
-            "UTC date one or seven days after signup."
+            "Retention is the share of new users who were active exactly 1 or 7 "
+            "days after signing up (UTC)."
         )
         if population_count == 0:
             st.info("No users match these filters.")
         elif retention.empty:
             st.info("No retention cohorts match the selected date range.")
         else:
-            cohort_total = int(retention["cohort_size"].sum())
             d1_eligible = int(retention["d1_eligible_users"].sum())
             d1_retained = int(retention["d1_retained_users"].sum())
             d7_eligible = int(retention["d7_eligible_users"].sum())
             d7_retained = int(retention["d7_retained_users"].sum())
             st.write(
-                f"Of {count(cohort_total, 'new user')}, "
-                f"{d1_retained:,} of {d1_eligible:,} "
+                f"{d1_retained:,} of {count(d1_eligible, 'new user')} "
                 f"came back on day 1 "
                 f"({format_rate(d1_retained / d1_eligible if d1_eligible else pd.NA)}) "
-                f"and {d7_retained:,} of {d7_eligible:,} on day 7 "
+                f"and {d7_retained:,} of {d7_eligible:,} came back on day 7 "
                 f"({format_rate(d7_retained / d7_eligible if d7_eligible else pd.NA)})."
             )
             chart = retention[["cohort_date", "d1_retention_rate", "d7_retention_rate"]]
@@ -674,18 +670,18 @@ def main() -> None:
             d1_pending = int(retention["d1_pending_users"].sum())
             with st.expander("Retention by cohort", expanded=False):
                 st.dataframe(display_retention, hide_index=True, width="stretch")
-                st.write(
-                    "A rate appears once its whole day has passed. "
-                    f"{count(d1_pending, 'user is', 'users are')} "
-                    "still too recent for day 1, and "
-                    f"{int(retention['d7_pending_users'].sum()):,} for day 7."
-                )
+                d7_pending = int(retention["d7_pending_users"].sum())
+                if d1_pending or d7_pending:
+                    st.write(
+                        f"{count(d1_pending, 'user is', 'users are')} too recent "
+                        f"for day 1, and {d7_pending:,} for day 7."
+                    )
 
     with cohorts_tab:
         st.header("Weekly signup cohorts")
         st.caption(
-            "Weekly retention = distinct cohort users active in a Monday-aligned "
-            "week divided by the starting cohort size."
+            "Weekly retention is the share of each signup week's users who were "
+            "active in each later week (weeks start on Monday)."
         )
         if population_count == 0:
             st.info("No users match these filters.")
