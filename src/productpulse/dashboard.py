@@ -73,6 +73,13 @@ def format_rate(value: object) -> str:
     return "N/A" if pd.isna(value) else f"{float(value):.1%}"
 
 
+def count(value: int, singular: str, plural: str | None = None) -> str:
+    """Return a count with the matching noun, such as '1 user' or '3 users'."""
+
+    noun = singular if value == 1 else (plural or f"{singular}s")
+    return f"{value:,} {noun}"
+
+
 def filter_clause(
     date_column: str,
     start_date: date,
@@ -310,7 +317,12 @@ def latest_failure_message(latest_run: pd.DataFrame) -> str | None:
     row = latest_run.iloc[0]
     if str(row.get("status", "")).lower() != "failed":
         return None
-    return "The latest refresh failed. Showing the last available data."
+    reason = row.get("error_message")
+    detail = f": {reason}" if isinstance(reason, str) and reason.strip() else ""
+    return (
+        f"The last rebuild failed{detail}. These charts show the data from before it. "
+        "Run `make rebuild` to try again."
+    )
 
 
 @st.cache_data(ttl=30, show_spinner=False)
@@ -334,7 +346,7 @@ def load_dashboard_snapshot(
             FROM relevant_dates
         """,
         "latest_run": """
-            SELECT status
+            SELECT status, error_message
             FROM pipeline_runs
             ORDER BY started_at DESC, pipeline_run_id DESC
             LIMIT 1
@@ -418,12 +430,18 @@ def main() -> None:
         or pd.isna(bounds.iloc[0]["min_date"])
         or pd.isna(bounds.iloc[0]["max_date"])
     ):
-        st.info("The database is ready, but it contains no activity data yet.")
+        st.info(
+            "The database has no events. "
+            "Add data to `data/input/` and run `make rebuild`."
+        )
         return
 
     population = snapshot["population"]
     if population.empty:
-        st.info("The database contains no user population to analyze.")
+        st.info(
+            "The database has no users. "
+            "Add data to `data/input/` and run `make rebuild`."
+        )
         return
 
     min_date = pd.Timestamp(bounds.iloc[0]["min_date"]).date()
@@ -448,7 +466,7 @@ def main() -> None:
 
     date_range = normalize_date_range(selected_dates)
     if date_range is None:
-        st.info("Complete the date range to calculate dashboard metrics.")
+        st.info("Pick an end date.")
         return
     start_date, end_date = date_range
     population_count = selected_population_count(
@@ -485,8 +503,8 @@ def main() -> None:
     )
 
     st.caption(
-        f"{start_date.isoformat()} to {end_date.isoformat()} UTC, "
-        f"{population_count:,} users"
+        f"{count(population_count, 'user')} from {start_date.isoformat()} "
+        f"to {end_date.isoformat()} (UTC)."
     )
     activity_tab, funnel_tab, retention_tab, cohorts_tab = st.tabs(
         ["Activity", "Activation", "Retention", "Cohorts"]
@@ -497,14 +515,15 @@ def main() -> None:
             "DAU = distinct users with at least one event on a UTC calendar date."
         )
         if population_count == 0:
-            st.info("No users match the selected dimensions.")
+            st.info("No users match these filters.")
         else:
             peak_dau = int(dau["active_users"].max()) if not dau.empty else 0
             active_days = int(dau["active_users"].gt(0).sum())
             average_dau = float(dau["active_users"].mean()) if not dau.empty else 0.0
             st.write(
-                f"{population_count:,} users, {active_days:,} active days, "
-                f"peak {peak_dau:,}, mean {average_dau:.1f} a day."
+                f"Users were active on {count(active_days, 'day')}. "
+                f"The busiest day had {count(peak_dau, 'active user')}, "
+                f"and the average was {average_dau:.1f} a day."
             )
             st.altair_chart(
                 productpulse_line_chart(
@@ -522,9 +541,6 @@ def main() -> None:
                     hide_index=True,
                     width="stretch",
                 )
-                st.write(
-                    "Dates with no activity inside the selected window appear as zero."
-                )
 
     with funnel_tab:
         st.header("Activation within 7 days")
@@ -533,7 +549,7 @@ def main() -> None:
             "from signup through day 7, inclusive."
         )
         if population_count == 0:
-            st.info("No users match the selected dimensions.")
+            st.info("No users match these filters.")
         elif funnel.empty:
             st.info("No signup cohorts match the selected date range.")
         else:
@@ -543,12 +559,17 @@ def main() -> None:
                 if totals["eligible_signups"]
                 else pd.NA
             )
+            pending = int(totals["pending_signups"])
             st.write(
-                f"{int(totals['signups']):,} signups, "
-                f"{int(totals['eligible_signups']):,} eligible, "
-                f"{int(totals['activated_users']):,} activated, "
-                f"rate {format_rate(total_rate)}, "
-                f"{int(totals['pending_signups']):,} pending"
+                f"{int(totals['activated_users']):,} of "
+                f"{count(int(totals['eligible_signups']), 'measurable signup')} "
+                f"activated within 7 days ({format_rate(total_rate)})."
+                + (
+                    f" {count(pending, 'signup is', 'signups are')} "
+                    "too recent to count."
+                    if pending
+                    else ""
+                )
             )
             stage_counts = pd.DataFrame(
                 (
@@ -557,7 +578,7 @@ def main() -> None:
                         "users": int(totals["signups"]),
                     },
                     {
-                        "stage": "Eligible for measurement",
+                        "stage": "Old enough to measure",
                         "users": int(totals["eligible_signups"]),
                     },
                     {
@@ -600,7 +621,7 @@ def main() -> None:
             "UTC date one or seven days after signup."
         )
         if population_count == 0:
-            st.info("No users match the selected dimensions.")
+            st.info("No users match these filters.")
         elif retention.empty:
             st.info("No retention cohorts match the selected date range.")
         else:
@@ -610,15 +631,16 @@ def main() -> None:
             d7_eligible = int(retention["d7_eligible_users"].sum())
             d7_retained = int(retention["d7_retained_users"].sum())
             st.write(
-                f"{cohort_total:,} cohort users, D1 "
-                f"{format_rate(d1_retained / d1_eligible if d1_eligible else pd.NA)} "
-                f"({d1_retained:,}/{d1_eligible:,}), D7 "
-                f"{format_rate(d7_retained / d7_eligible if d7_eligible else pd.NA)} "
-                f"({d7_retained:,}/{d7_eligible:,})"
+                f"Of {count(cohort_total, 'new user')}, "
+                f"{d1_retained:,} of {d1_eligible:,} "
+                f"came back on day 1 "
+                f"({format_rate(d1_retained / d1_eligible if d1_eligible else pd.NA)}) "
+                f"and {d7_retained:,} of {d7_eligible:,} on day 7 "
+                f"({format_rate(d7_retained / d7_eligible if d7_eligible else pd.NA)})."
             )
             chart = retention[["cohort_date", "d1_retention_rate", "d7_retention_rate"]]
             if chart.iloc[:, 1:].dropna(how="all").empty:
-                st.write("All selected retention cohorts are pending maturity.")
+                st.write("These signups are too recent for day-1 or day-7 retention.")
             else:
                 st.altair_chart(
                     productpulse_line_chart(
@@ -649,15 +671,14 @@ def main() -> None:
                     "d7_retention_rate": "D7 rate",
                 }
             )
+            d1_pending = int(retention["d1_pending_users"].sum())
             with st.expander("Retention by cohort", expanded=False):
                 st.dataframe(display_retention, hide_index=True, width="stretch")
                 st.write(
-                    "A rate appears only after the entire target UTC calendar date "
-                    "has elapsed. Pending users are excluded from its denominator."
-                )
-                st.write(
-                    f"D1 pending: {int(retention['d1_pending_users'].sum()):,}, "
-                    f"D7 pending: {int(retention['d7_pending_users'].sum()):,}"
+                    "A rate appears once its whole day has passed. "
+                    f"{count(d1_pending, 'user is', 'users are')} "
+                    "still too recent for day 1, and "
+                    f"{int(retention['d7_pending_users'].sum()):,} for day 7."
                 )
 
     with cohorts_tab:
@@ -667,7 +688,7 @@ def main() -> None:
             "week divided by the starting cohort size."
         )
         if population_count == 0:
-            st.info("No users match the selected dimensions.")
+            st.info("No users match these filters.")
         elif cohorts.empty:
             st.info("No weekly cohorts match the selected date range.")
         else:
@@ -675,8 +696,14 @@ def main() -> None:
             cohort_count = int(cohorts["cohort_week"].nunique())
             period_count = int(cohorts["weeks_since_signup"].nunique())
             st.write(
-                f"{cohort_count:,} cohorts, {period_count:,} observed weeks, "
-                f"{incomplete_cells:,} pending cells"
+                f"{count(cohort_count, 'signup week')} tracked over "
+                f"{count(period_count, 'week')}."
+                + (
+                    f" {count(incomplete_cells, 'cell is', 'cells are')} N/A because "
+                    "the week hasn't ended."
+                    if incomplete_cells
+                    else ""
+                )
             )
             st.altair_chart(
                 productpulse_cohort_chart(cohorts),
@@ -701,11 +728,6 @@ def main() -> None:
             )
             with st.expander("Retention by week", expanded=False):
                 st.dataframe(display_cohorts, hide_index=True, width="stretch")
-                st.write(
-                    "A rate appears only after the entire activity week has ended. "
-                    "Pending cells stay N/A; their observed active-user counts "
-                    "remain in the table."
-                )
 
 
 if __name__ == "__main__":

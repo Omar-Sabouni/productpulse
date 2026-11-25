@@ -21,7 +21,6 @@ make rebuild
 ## Dashboard
 
 The sidebar filters the date range, acquisition channel, and signup device.
-Each tab keeps its definition, chart, and table together.
 
 ![ProductPulse dashboard showing sidebar filters and daily activity](docs/productpulse-dashboard.png)
 

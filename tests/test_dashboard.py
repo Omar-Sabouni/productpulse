@@ -311,7 +311,8 @@ def test_snapshot_refreshes_when_the_database_changes(tmp_path: Path) -> None:
         2026, 1, 11
     )
     assert latest_failure_message(refreshed["latest_run"]) == (
-        "The latest refresh failed. Showing the last available data."
+        "The last rebuild failed: synthetic failure. These charts show the data "
+        "from before it. Run `make rebuild` to try again."
     )
 
 
@@ -329,7 +330,7 @@ def test_streamlit_handles_missing_and_empty_analytics_databases(
     monkeypatch.setenv("PRODUCTPULSE_DATABASE_PATH", str(empty_database))
     app = AppTest.from_file(str(DASHBOARD_PATH), default_timeout=20).run()
     assert not app.exception
-    assert any("no activity data" in info.value for info in app.info)
+    assert any("has no events" in info.value for info in app.info)
 
 
 def test_streamlit_rejects_an_older_analytics_schema_cleanly(
@@ -360,7 +361,7 @@ def test_streamlit_waits_for_a_complete_date_range(tmp_path: Path, monkeypatch) 
     app.run()
 
     assert not app.exception
-    assert any("complete the date range" in info.value.lower() for info in app.info)
+    assert any("pick an end date" in info.value.lower() for info in app.info)
     assert len(app.info) == 1
 
 
@@ -407,11 +408,11 @@ def test_real_rebuild_opens_in_dashboard(tmp_path: Path, monkeypatch) -> None:
     assert not app.status
     assert not app.metric
     assert any(
-        " to " in caption.value and caption.value.endswith(" users")
+        " to " in caption.value and caption.value.endswith("(UTC).")
         for caption in app.caption
     )
     prose = "\n".join(item.value for item in app.markdown)
-    assert "rate 72.4%" in prose
+    assert "activated within 7 days (72.4%)" in prose
     assert {item.label for item in app.expander} == {
         "Daily numbers",
         "Activation by cohort",
