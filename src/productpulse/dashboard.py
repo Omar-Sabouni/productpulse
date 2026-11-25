@@ -607,10 +607,6 @@ def main() -> None:
             )
             with st.expander("Activation by cohort", expanded=False):
                 st.dataframe(display_funnel, hide_index=True, width="stretch")
-                st.write(
-                    "A signup counts toward the rate once 7 full days have passed "
-                    "since it signed up."
-                )
 
     with retention_tab:
         st.header("Day-1 and day-7 retention")
